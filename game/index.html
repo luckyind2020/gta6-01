@@ -9,13 +9,13 @@
   html, body { margin: 0; padding: 0; background: #0b1020; height: 100%; overflow: hidden; }
   #wrap { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
   canvas { width: 100vw; height: 100vh; display: block; background: #1d2b1f; image-rendering: auto; }
-  #hint { position: fixed; left: 10px; bottom: 8px; color: rgba(255,255,255,.55);
+  #keys { position: fixed; left: 10px; bottom: 8px; color: rgba(255,255,255,.55);
     font: 12px/1.4 system-ui, sans-serif; pointer-events: none; }
 </style>
 </head>
 <body>
 <div id="wrap"><canvas id="game" width="1280" height="720"></canvas></div>
-<div id="hint">WASD move &middot; E enter / exit car &middot; Space punch &middot; Shift boost &middot; P pause &middot; M mute</div>
-<script type="module" src="./src/main.js"></script>
+<div id="keys">WASD move &middot; E enter / exit car &middot; Space punch &middot; Shift boost &middot; P pause &middot; M mute</div>
+<script type="module" src="./src/boot.js"></script>
 </body>
 </html>
