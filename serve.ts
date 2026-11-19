@@ -1,56 +1,55 @@
-// A tiny static server for game/ (Node 22, standard library only), so
-// the entry can be played locally without a build step:
-// `node serve.ts` serves game/ on http://localhost:8080.
-// It sends the MIME types a browser game needs, refuses any path
-// outside game/, and otherwise does nothing clever: this is a
-// development convenience, not a web server for the internet.
+// A tiny static server for game/ (Node 22, standard library only), so the
+// entry can be played locally without a build step. Run `node serve.ts` and
+// open http://localhost:8080. It only serves files under game/, sends the
+// MIME types a browser game needs, and refuses anything outside the root.
+
 import { createReadStream, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const gameDir = resolve(fileURLToPath(new URL('./game', import.meta.url)));
-const cliArgs = process.argv.slice(2);
-const portFlag = cliArgs.indexOf('--port');
-const wanted = portFlag === -1 ? 8080 : Number(cliArgs[portFlag + 1]);
-const port = Number.isInteger(wanted) && wanted > 0 && wanted < 65536 ? wanted : 8080;
+const gameRoot = resolve(fileURLToPath(new URL('./game', import.meta.url)));
 
-const TYPES = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.mjs': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.webp': 'image/webp',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-  '.woff2': 'font/woff2',
-  '.glb': 'model/gltf-binary',
-  '.gltf': 'model/gltf+json',
-  '.bin': 'application/octet-stream',
-  '.wasm': 'application/wasm',
-  '.wav': 'audio/wav',
-  '.mp3': 'audio/mpeg',
-  '.ogg': 'audio/ogg',
-  '.txt': 'text/plain; charset=utf-8',
-};
+function mimeFor(file) {
+  const table = {
+    '.html': 'text/html; charset=utf-8',
+    '.js': 'text/javascript; charset=utf-8',
+    '.mjs': 'text/javascript; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp',
+    '.svg': 'image/svg+xml',
+    '.ico': 'image/x-icon',
+    '.woff2': 'font/woff2',
+    '.wasm': 'application/wasm',
+    '.txt': 'text/plain; charset=utf-8',
+  };
+  return table[extname(file).toLowerCase()] ?? 'application/octet-stream';
+}
 
-function answer(req, res) {
-  const url = new URL(req.url ?? '/', 'http://localhost');
-  let path;
+function pickPort() {
+  const at = process.argv.indexOf('--port');
+  const wanted = at === -1 ? 8080 : Number(process.argv[at + 1]);
+  return Number.isInteger(wanted) && wanted > 0 && wanted < 65536 ? wanted : 8080;
+}
+
+const port = pickPort();
+
+createServer((req, res) => {
+  let path = '/';
   try {
-    path = decodeURIComponent(url.pathname);
+    path = decodeURIComponent(new URL(req.url ?? '/', 'http://localhost').pathname);
   } catch {
     res.writeHead(400).end('bad request');
     return;
   }
   if (path.endsWith('/')) path += 'index.html';
-  const file = resolve(join(gameDir, normalize(path)));
-  if (file !== gameDir && !file.startsWith(gameDir + sep)) {
+  const file = resolve(join(gameRoot, normalize(path)));
+  if (file !== gameRoot && !file.startsWith(gameRoot + sep)) {
     res.writeHead(403).end('forbidden');
     return;
   }
@@ -64,13 +63,11 @@ function answer(req, res) {
     return;
   }
   res.writeHead(200, {
-    'content-type': TYPES[extname(file).toLowerCase()] ?? 'application/octet-stream',
+    'content-type': mimeFor(file),
     'content-length': bytes,
     'cache-control': 'no-store',
   });
   createReadStream(file).pipe(res);
-}
-
-createServer(answer).listen(port, '127.0.0.1', () => {
-  console.log(`game/ is on http://localhost:${port}`);
+}).listen(port, '127.0.0.1', () => {
+  console.log(`Sunset Bay is on http://localhost:${port}`);
 });
